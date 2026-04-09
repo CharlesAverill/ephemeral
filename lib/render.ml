@@ -89,6 +89,22 @@ let size_of_shape (s : shape) : int =
   | Square ->
       5
 
+
+(** Guess a body's size from its name *)
+let size_of_name (s : string) : int = match s with
+  | "Sun" -> 20
+  | "Jupiter" -> 16
+  | "Saturn" -> 14
+  | "Uranus" -> 12
+  | "Neptune" -> 11
+  | "Earth" -> 10
+  | "Venus" -> 10
+  | "Mars" -> 7
+  | "Mercury" -> 6
+  | "Moon" -> 5
+  | "Pluto" -> 4
+  | _ -> size_of_shape (shape_of_name s)
+
 (** Whether to use per-frame dynamic scaling *)
 let dynamic_scale = ref false
 
@@ -141,7 +157,7 @@ let init (vts : vtable list) (speed : int) (title : string) =
   reference_body :=
     { shape= shape_of_name center.name
     ; filled= false
-    ; size= size_of_shape (shape_of_name center.name)
+    ; size= size_of_name center.name
     ; color= color_of_name center.name
     ; table= None } ;
   targets :=
@@ -152,7 +168,7 @@ let init (vts : vtable list) (speed : int) (title : string) =
         in
         { shape= shape_of_name vt.target_body.name
         ; filled= false
-        ; size= size_of_shape (shape_of_name vt.target_body.name)
+        ; size= size_of_name vt.target_body.name
         ; color= color_of_name vt.target_body.name
         ; table= Some vt } )
       vts ;
@@ -208,8 +224,18 @@ let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
          ; (x + size, y - size, x + size, y + size) |]
       in
       draw_segments pts
-  | _ ->
-      ()
+  | Square ->
+      let draw =
+        if filled then
+          fill_poly
+        else
+          draw_poly
+      in
+      let half = size / 2 in
+      let pts = [|(x-half, y-half); (x-half, y+half); (x+half, y+half); (x+half, y-half)|] in
+      draw pts
+  | Point -> draw_circle x y 1
+  | Cross -> let half = size / 2 in draw_segments [|(x-half, y, x+half, y); (x, y-half, x, y+half)|]
 
 (** Compute a body's screen coordinates from its real coordinates *)
 let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
