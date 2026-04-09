@@ -58,7 +58,7 @@ let parse_line (center_body, target_body, entries, stage) line =
     | NewRow ->
         let time_rexp =
           regexp
-            {|^[0-9]+\.[0-9]+ = A.D. \([0-9]+-[A-Z][a-z]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+\).[0-9]+ UTC.*|}
+            {|^[0-9]+\.[0-9]+ = A.D. \([0-9]+-[A-Z][a-z]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+\).[0-9]+.*|}
         in
         if string_match time_rexp line 0 then
           ( center_body

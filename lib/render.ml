@@ -2,10 +2,11 @@
 
 open Graphics
 open Vector_table
+open Common
 open Unix
 
 (** Body shapes *)
-type shape = Circle | Square | Triangle | Point | Cross
+type shape = Circle | Square | Triangle | Point | Cross | H
 
 (** Screen-space body *)
 type body =
@@ -26,6 +27,30 @@ let targets = ref []
 (** Bounds on the plane in terms of system coordinates *)
 let min_x, max_x, min_y, max_y = (ref 0., ref 0., ref 0., ref 0.)
 
+(** Guess a body's shape from its name *)
+let shape_of_name (s : string) : shape =
+  if
+    List.exists (( = ) s)
+      [ "Sun"
+      ; "Mercury"
+      ; "Venus"
+      ; "Earth"
+      ; "Moon"
+      ; "Mars"
+      ; "Jupiter"
+      ; "Saturn"
+      ; "Uranus"
+      ; "Neptune"
+      ; "Pluto" ]
+  then
+    Circle
+  else if contains s "Station" then
+    H
+  else if contains s "(spacecraft)" then
+    Triangle
+  else
+    Point
+
 (** Initialize the rendering environment *)
 let init (vts : vtable list) =
   open_graph "" ;
@@ -41,11 +66,7 @@ let init (vts : vtable list) =
         let is_spacecraft =
           String.ends_with ~suffix:"(spacecraft)" vt.target_body.name
         in
-        { shape=
-            ( if is_spacecraft then
-                Triangle
-              else
-                Circle )
+        { shape= shape_of_name vt.target_body.name
         ; filled= false
         ; size=
             ( if is_spacecraft then
@@ -90,12 +111,22 @@ let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
       in
       draw x y size
   | Triangle ->
+      let draw =
+        if filled then
+          fill_poly
+        else
+          draw_poly
+      in
       let half = size in
       let pts = [|(x, y + half); (x - half, y - half); (x + half, y - half)|] in
-      if filled then
-        fill_poly pts
-      else
-        draw_poly pts
+      draw pts
+  | H ->
+      let pts =
+        [| (x - size, y, x + size, y)
+         ; (x - size, y - size, x - size, y + size)
+         ; (x + size, y - size, x + size, y + size) |]
+      in
+      draw_segments pts
   | _ ->
       ()
 
@@ -172,40 +203,45 @@ let render_frame (st : status) (entry_idx : int) =
         moveto 8 8 ;
         draw_string (format_time entry.time) )
 
-let speeds = [1; 2; 5; 10; 25; 50]
+type speed =
+  | Slow of int   (* advance 1 entry every n frames *)
+  | Fast of int   (* advance n entries every frame *)
+
+let speeds = [| Slow 16; Slow 8; Slow 4; Slow 2; Fast 1; Fast 2; Fast 5; Fast 10; Fast 25; Fast 50 |]
 
 let render () =
   let frame_time = 1.0 /. 60.0 in
   try
     let entry_idx = ref 0 in
-    let speed_idx = ref 0 in
+    let speed_idx = ref 4 in
+    let frame_count = ref 0 in
     while true do
       let t_start = gettimeofday () in
-      (* Poll events *)
       let status = wait_next_event [Key_pressed; Poll] in
-      (* ESC to quit *)
       if status.keypressed then
         match Graphics.read_key () with
-        | '\027' ->
-            raise Exit
+        | '\027' -> raise Exit
         | '.' ->
-            if !speed_idx < List.length speeds - 1 then
-              speed_idx := !speed_idx + 1
+            if !speed_idx < Array.length speeds - 1 then incr speed_idx
         | ',' ->
-            if 0 < !speed_idx then speed_idx := !speed_idx - 1
-        | '/' ->
-            speed_idx := 0
-        | _ ->
-            ()
+            if !speed_idx > 0 then decr speed_idx
+        | '/' -> speed_idx := 4
+        | _ -> ()
       else
         render_frame status !entry_idx ;
-      entry_idx := !entry_idx + List.nth speeds !speed_idx ;
-      (* 60fps cap *)
-      let t_end = gettimeofday () in
-      let elapsed = t_end -. t_start in
+      (match speeds.(!speed_idx) with
+      | Slow n ->
+          incr frame_count ;
+          if !frame_count >= n then begin
+            frame_count := 0 ;
+            incr entry_idx
+          end
+      | Fast n ->
+          frame_count := 0 ;
+          entry_idx := !entry_idx + n) ;
+      let elapsed = gettimeofday () -. t_start in
       let sleep_time = frame_time -. elapsed in
       if sleep_time > 0.0 then ignore (Unix.sleepf sleep_time) ;
-      (* Flush double buffer *)
       synchronize ()
     done
   with Exit -> close_graph ()

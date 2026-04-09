@@ -22,3 +22,11 @@ let clamp (x : 'a) (min : 'a) (max : 'a) : 'a =
     max
   else
     x
+
+(** Check if [s1] contains [s2] *)
+let contains (s1 : string) (s2 : string) : bool =
+  let re = Str.regexp_string s2 in
+  try
+    ignore (Str.search_forward re s1 0) ;
+    true
+  with Not_found -> false

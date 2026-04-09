@@ -7,7 +7,7 @@ open Render
 
 let () =
   let args = Argparse.parse_arguments () in
-  Printf.printf "Vector Tables: %s\n" (String.concat "," args.vector_tables) ;
+  (* Printf.printf "Vector Tables: %s\n" (String.concat "," args.vector_tables) ; *)
   (* Parse tables from files *)
   let vtables = List.map parse args.vector_tables in
   (* Align table time periods *)
