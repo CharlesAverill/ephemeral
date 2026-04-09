@@ -1,5 +1,7 @@
 (executable
  (public_name ephemeral)
  (name main)
- (libraries ephemeral)
- (modes native))
+ (libraries ephemeral ppx_unreachable)
+ (modes native)
+ (preprocess
+  (pps ppx_unreachable)))

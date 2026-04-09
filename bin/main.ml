@@ -13,4 +13,5 @@ let () =
   (* Align table time periods *)
   let vtables = align vtables in
   (* List.iter (fun s -> string_of_vtable s |> print_endline) vtables *)
-  init vtables ; render ()
+  init vtables args.speed args.title ;
+  match args.render_video with None -> render () | Some path -> record path
