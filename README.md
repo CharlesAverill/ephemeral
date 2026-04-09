@@ -1,6 +1,7 @@
 # ephemeral
 
-Parser and visualizer for JPL Ephemeris Files
+Parser and visualizer for JPL Ephemeris Files.
+Trajectories are available to the public via the [JPL Horizons System](https://ssd.jpl.nasa.gov/horizons/app.html).
 
 ![artemis](test/artemis_ii/artemis_ii.gif)
 
@@ -55,6 +56,9 @@ Usage: ephemeral [OPTION]... [VECTOR_TABLE]...
   --title    <str>   Draws text to the top of the screen
   --help  Display this list of options
 ```
+
+If passing multiple vector tables, they must share the same central object (e.g.,
+all tables must be heliocentric, or geocentric, or etc.).
 
 ## Installation
 
