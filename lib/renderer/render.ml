@@ -1,32 +1,12 @@
 (** Rendering vector tables *)
 
 open Graphics
+open Ephemeral
 open Vector_table
 open Common
 open Unix
 open Logging
-
-(** Body shapes *)
-type shape = Circle | Square | Triangle | Point | Cross | H
-
-(** Screen-space body *)
-type body =
-  { shape: shape  (** What shape the body will show as *)
-  ; filled: bool  (** Whether the shape will be filled *)
-  ; size: int
-        (** Radius, side length, side length, N/A, width depending on [shape] *)
-  ; color: color  (** Color of body *)
-  ; table: vtable option  (** Corresponding vector table *) }
-
-(** System's reference body *)
-let reference_body =
-  ref {shape= Circle; filled= false; size= 20; color= blue; table= None}
-
-(** Target bodies in system *)
-let targets = ref []
-
-(** Bounds on the plane in terms of system coordinates *)
-let min_x, max_x, min_y, max_y = (ref 0., ref 0., ref 0., ref 0.)
+open Settings
 
 (** Guess a body's shape from its name *)
 let shape_of_name (s : string) : shape =
@@ -89,53 +69,94 @@ let size_of_shape (s : shape) : int =
   | Square ->
       5
 
-
 (** Guess a body's size from its name *)
-let size_of_name (s : string) : int = match s with
-  | "Sun" -> 20
-  | "Jupiter" -> 16
-  | "Saturn" -> 14
-  | "Uranus" -> 12
-  | "Neptune" -> 11
-  | "Earth" -> 10
-  | "Venus" -> 10
-  | "Mars" -> 7
-  | "Mercury" -> 6
-  | "Moon" -> 5
-  | "Pluto" -> 4
-  | _ -> size_of_shape (shape_of_name s)
+let size_of_name (s : string) : int =
+  match s with
+  | "Sun" ->
+      20
+  | "Jupiter" ->
+      16
+  | "Saturn" ->
+      14
+  | "Uranus" ->
+      12
+  | "Neptune" ->
+      11
+  | "Earth" ->
+      10
+  | "Venus" ->
+      10
+  | "Mars" ->
+      7
+  | "Mercury" ->
+      6
+  | "Moon" ->
+      5
+  | "Pluto" ->
+      4
+  | _ ->
+      size_of_shape (shape_of_name s)
 
-(** Whether to use per-frame dynamic scaling *)
-let dynamic_scale = ref false
+(** Mouse drag state: Some (last_x, last_y) when button held *)
+let drag_origin = ref None
 
-(** Frame advancement speeds *)
-type speed =
-  | Slow of int  (** Advance 1 entry every n frames *)
-  | Fast of int  (** Advance n entries every frame *)
+(** Apply the current view rotation to a 3D point, returning projected (x, y) *)
+let rotate_point (x : float) (y : float) (z : float) : float * float =
+  let ct = Float.cos !view_theta and st = Float.sin !view_theta in
+  let cp = Float.cos !view_phi and sp = Float.sin !view_phi in
+  (* Rotate around Z by theta (azimuth) *)
+  let x' = (x *. ct) -. (y *. st) in
+  let y' = (x *. st) +. (y *. ct) in
+  let z' = z in
+  (* Rotate around X by phi (elevation) *)
+  let y'' = (y' *. cp) -. (z' *. sp) in
+  (* x'' = x' unchanged, z'' unused - orthographic projection *)
+  (x', y'')
 
-(** Pre-selected speeds *)
-let speeds =
-  [| Slow 16
-   ; Slow 8
-   ; Slow 4
-   ; Slow 2
-   ; Fast 1
-   ; Fast 2
-   ; Fast 5
-   ; Fast 10
-   ; Fast 25
-   ; Fast 50 |]
-
-let default_speed_idx =
-  ref
-    ( match Array.find_index (( = ) (Fast 1)) speeds with
-    | None ->
-        [%unreachable]
-    | Some idx ->
-        idx )
-
-(** Title text to be drawn at the top of the screen *)
-let title_text = ref None
+let draw_axes (entry_idx : int) =
+  let sx, sy = (size_x (), size_y ()) in
+  let cx, cy = (sx / 2, sy / 2) in
+  (* Compute scale exactly like screen_coords_of_body *)
+  let max_extent =
+    if !dynamic_scale then
+      List.fold_left
+        (fun acc t ->
+          match t.table with
+          | None ->
+              acc
+          | Some tbl ->
+              let e =
+                List.nth tbl.entries (entry_idx mod List.length tbl.entries)
+              in
+              let ex, ey = rotate_point e.pos.x e.pos.y e.pos.z in
+              Float.max acc (Float.max (Float.abs ex) (Float.abs ey)) )
+        1. !targets
+    else
+      Float.max
+        (Float.max (Float.abs !min_x) (Float.abs !max_x))
+        (Float.max (Float.abs !min_y) (Float.abs !max_y))
+  in
+  let max_extent =
+    if max_extent = 0. then
+      1.
+    else
+      max_extent
+  in
+  let scale = float !reference_body.size in
+  (* Basis vectors *)
+  let axes =
+    [(1., 0., 0.) (* X *); (0., 1., 0.) (* Y *); (0., 0., 1.) (* Z *)]
+  in
+  set_color (rgb 180 180 180) ;
+  (* light gray *)
+  List.iter
+    (fun (x, y, z) ->
+      let rx, ry = rotate_point x y z in
+      let px = int_of_float (rx *. scale) in
+      let py = int_of_float (ry *. scale) in
+      moveto cx cy ;
+      lineto (cx + px) (cy + py) )
+    axes
 
 (** Initialize the rendering environment *)
 let init (vts : vtable list) (speed : int) (title : string) =
@@ -232,10 +253,18 @@ let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
           draw_poly
       in
       let half = size / 2 in
-      let pts = [|(x-half, y-half); (x-half, y+half); (x+half, y+half); (x+half, y-half)|] in
+      let pts =
+        [| (x - half, y - half)
+         ; (x - half, y + half)
+         ; (x + half, y + half)
+         ; (x + half, y - half) |]
+      in
       draw pts
-  | Point -> draw_circle x y 1
-  | Cross -> let half = size / 2 in draw_segments [|(x-half, y, x+half, y); (x, y-half, x, y+half)|]
+  | Point ->
+      draw_circle x y 1
+  | Cross ->
+      let half = size / 2 in
+      draw_segments [|(x - half, y, x + half, y); (x, y - half, x, y + half)|]
 
 (** Compute a body's screen coordinates from its real coordinates *)
 let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
@@ -248,7 +277,7 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
       let entry =
         List.nth table.entries (entry_idx mod List.length table.entries)
       in
-      let x, y = (entry.pos.x, entry.pos.y) in
+      let rx, ry = rotate_point entry.pos.x entry.pos.y entry.pos.z in
       let max_extent =
         if !dynamic_scale then
           List.fold_left
@@ -260,8 +289,8 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
                   let e =
                     List.nth tbl.entries (entry_idx mod List.length tbl.entries)
                   in
-                  Float.max acc
-                    (Float.max (Float.abs e.pos.x) (Float.abs e.pos.y)) )
+                  let ex, ey = rotate_point e.pos.x e.pos.y e.pos.z in
+                  Float.max acc (Float.max (Float.abs ex) (Float.abs ey)) )
             1. !targets
         else
           Float.max
@@ -278,8 +307,8 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
         Float.min (float_of_int sx) (float_of_int sy)
         /. (2. *. max_extent *. 1.1)
       in
-      let px = int_of_float ((x *. scale) +. float_of_int cx) in
-      let py = int_of_float ((y *. scale) +. float_of_int cy) in
+      let px = int_of_float ((rx *. scale) +. float_of_int cx) in
+      let py = int_of_float ((ry *. scale) +. float_of_int cy) in
       let dx = px - cx in
       let dy = py - cy in
       let dist = Float.sqrt (float_of_int ((dx * dx) + (dy * dy))) in
@@ -325,16 +354,17 @@ let render_frame (st : status) (entry_idx : int) =
   match !targets with
   | [] ->
       ()
-  | body :: _ -> (
-    match body.table with
-    | None ->
-        ()
-    | Some table ->
-        let idx = entry_idx mod List.length table.entries in
-        let entry = List.nth table.entries idx in
-        set_color white ;
-        moveto 8 8 ;
-        draw_string (format_time entry.time) )
+  | body :: _ ->
+      ( match body.table with
+      | None ->
+          ()
+      | Some table ->
+          let idx = entry_idx mod List.length table.entries in
+          let entry = List.nth table.entries idx in
+          set_color white ;
+          moveto 8 8 ;
+          draw_string (format_time entry.time) ) ;
+      draw_axes entry_idx
 
 (** Main render loop *)
 let render () =
@@ -346,7 +376,27 @@ let render () =
     let paused = ref false in
     while true do
       let t_start = gettimeofday () in
-      let status = wait_next_event [Key_pressed; Poll] in
+      let status =
+        wait_next_event [Key_pressed; Button_down; Button_up; Mouse_motion; Poll]
+      in
+      (* Mouse drag to rotate *)
+      if status.button then (
+        match !drag_origin with
+        | None ->
+            drag_origin := Some (status.mouse_x, status.mouse_y)
+        | Some (lx, ly) ->
+            let dx = status.mouse_x - lx in
+            let dy = status.mouse_y - ly in
+            let sensitivity = 0.005 in
+            view_theta := !view_theta +. (float_of_int dx *. sensitivity) ;
+            view_phi := !view_phi -. (float_of_int dy *. sensitivity) ;
+            (* Clamp phi to avoid flipping past poles *)
+            view_phi :=
+              Float.max (-.Float.pi /. 2.)
+                (Float.min (Float.pi /. 2.) !view_phi) ;
+            drag_origin := Some (status.mouse_x, status.mouse_y)
+      ) else
+        drag_origin := None ;
       ( if status.keypressed then
           match Graphics.read_key () with
           | '\027' ->
@@ -361,6 +411,9 @@ let render () =
               paused := not !paused
           | 'z' ->
               dynamic_scale := not !dynamic_scale
+          | 'r' ->
+              view_theta := 0. ;
+              view_phi := 0.
           | _ ->
               () ) ;
       render_frame status !entry_idx ;

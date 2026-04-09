@@ -1,6 +1,6 @@
 open Ephemeral
 open Common
-open Render
+open Renderer.Settings
 
 type arguments =
   { vector_tables: path list
@@ -27,6 +27,18 @@ let parse_arguments () =
              <bool>  Determines whether view scales with scene
                      (default=false)|}
       )
+    ; ( "--theta"
+      , Arg.Set_float view_theta
+      , Printf.sprintf
+          {|   <float> Sets the starting azimuth of the viewport
+                     (%d-%d, default=%d)|}
+          0 360 (int_of_float !view_theta) )
+    ; ( "--phi"
+      , Arg.Set_float view_phi
+      , Printf.sprintf
+          {|   <float> Sets the starting elevation of the viewport
+                     (%f-%f, default=%f)|}
+          (-.Float.pi /. 2.) (Float.pi /. 2.) !view_phi )
     ; ( "--record"
       , Arg.String (fun s -> render_video := Some s)
       , {|  <path>  Runs one loop of the ephemerides and calls

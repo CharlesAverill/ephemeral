@@ -3,7 +3,7 @@ open Ephemeral
 open Common
 open Parser
 open Vector_table
-open Render
+open Renderer.Render
 
 let () =
   let args = Argparse.parse_arguments () in

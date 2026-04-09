@@ -1,0 +1,7 @@
+(library
+ (name renderer)
+ (public_name ephemeral.renderer)
+ (modules render settings)
+ (libraries ephemeral unix ppx_unreachable graphics)
+ (preprocess
+  (pps ppx_unreachable)))

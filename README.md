@@ -14,6 +14,8 @@ Parser and visualizer for JPL Ephemeris Files
 
 ![earth-sun](test/earth_sun_march2026.gif)
 
+`dune exec -- ephemeral test/iss.txt --title "ISS March 1st 2026" --theta=45 --phi -1.25`
+
 ![iss](test/iss_march2026.gif)
 
 ## Controls
