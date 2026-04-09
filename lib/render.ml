@@ -29,6 +29,7 @@ let min_x, max_x, min_y, max_y = (ref 0., ref 0., ref 0., ref 0.)
 (** Initialize the rendering environment *)
 let init (vts : vtable list) =
   open_graph "" ;
+  auto_synchronize false ;
   set_window_title
     ( List.map (fun vt -> vt.target_body.name) vts
     |> String.concat ", "
@@ -192,6 +193,8 @@ let render () =
               speed_idx := !speed_idx + 1
         | ',' ->
             if 0 < !speed_idx then speed_idx := !speed_idx - 1
+        | '/' ->
+            speed_idx := 0
         | _ ->
             ()
       else
@@ -201,6 +204,8 @@ let render () =
       let t_end = gettimeofday () in
       let elapsed = t_end -. t_start in
       let sleep_time = frame_time -. elapsed in
-      if sleep_time > 0.0 then ignore (Unix.sleepf sleep_time)
+      if sleep_time > 0.0 then ignore (Unix.sleepf sleep_time) ;
+      (* Flush double buffer *)
+      synchronize ()
     done
   with Exit -> close_graph ()
