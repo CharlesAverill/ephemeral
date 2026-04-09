@@ -137,6 +137,11 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
         ( cx + int_of_float (float_of_int dx *. factor)
         , cy + int_of_float (float_of_int dy *. factor) )
 
+let format_time (t : float) : string =
+  let tm = Unix.gmtime t in
+  Printf.sprintf "%04d-%02d-%02d %02d:%02d:%02d" (tm.tm_year + 1900)
+    (tm.tm_mon + 1) tm.tm_mday tm.tm_hour tm.tm_min tm.tm_sec
+
 let render_frame (st : status) (entry_idx : int) =
   (* Clear screen *)
   set_color black ;
@@ -150,7 +155,21 @@ let render_frame (st : status) (entry_idx : int) =
     (fun body ->
       let x, y = screen_coords_of_body entry_idx body in
       draw_shape body.shape body.filled (x, y) body.size body.color )
-    !targets
+    !targets ;
+  (* Draw timestamp *)
+  match !targets with
+  | [] ->
+      ()
+  | body :: _ -> (
+    match body.table with
+    | None ->
+        ()
+    | Some table ->
+        let idx = entry_idx mod List.length table.entries in
+        let entry = List.nth table.entries idx in
+        set_color white ;
+        moveto 8 8 ;
+        draw_string (format_time entry.time) )
 
 let speeds = [1; 2; 5; 10; 25; 50]
 

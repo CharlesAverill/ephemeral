@@ -1,4 +1,5 @@
 (executable
  (public_name ephemeral)
  (name main)
- (libraries ephemeral))
+ (libraries ephemeral)
+ (modes native))
