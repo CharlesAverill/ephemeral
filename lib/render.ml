@@ -51,6 +51,16 @@ let shape_of_name (s : string) : shape =
   else
     Point
 
+(** Guess a body's size from its shape *)
+let size_of_shape (s : shape) : int =
+  match s with
+  | Circle -> 10
+  | Triangle -> 3
+  | H -> 6
+  | Point -> 0
+  | Cross -> 6
+  | Square -> 5
+
 (** Initialize the rendering environment *)
 let init (vts : vtable list) =
   open_graph "" ;
@@ -68,11 +78,7 @@ let init (vts : vtable list) =
         in
         { shape= shape_of_name vt.target_body.name
         ; filled= false
-        ; size=
-            ( if is_spacecraft then
-                2
-              else
-                8 )
+        ; size=size_of_shape (shape_of_name vt.target_body.name)
         ; color= white
         ; table= Some vt } )
       vts ;
@@ -98,6 +104,7 @@ let init (vts : vtable list) =
   min_y := pad !min_y ;
   max_y := pad !max_y
 
+(** Draw a body's shape on the screen *)
 let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
     (color : color) =
   set_color color ;
@@ -130,6 +137,7 @@ let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
   | _ ->
       ()
 
+(** Compute a body's screen coordinates from its real coordinates *)
 let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
   let sx, sy = (size_x (), size_y ()) in
   let cx, cy = (sx / 2, sy / 2) in
@@ -169,11 +177,13 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
         ( cx + int_of_float (float_of_int dx *. factor)
         , cy + int_of_float (float_of_int dy *. factor) )
 
+(** Convert an epoch timestamp to text *)
 let format_time (t : float) : string =
   let tm = Unix.gmtime t in
   Printf.sprintf "%04d-%02d-%02d %02d:%02d:%02d" (tm.tm_year + 1900)
     (tm.tm_mon + 1) tm.tm_mday tm.tm_hour tm.tm_min tm.tm_sec
 
+(** Render an individual frame *)
 let render_frame (st : status) (entry_idx : int) =
   (* Clear screen *)
   set_color black ;
@@ -203,42 +213,61 @@ let render_frame (st : status) (entry_idx : int) =
         moveto 8 8 ;
         draw_string (format_time entry.time) )
 
+(** Frame advancement speeds *)
 type speed =
-  | Slow of int   (* advance 1 entry every n frames *)
-  | Fast of int   (* advance n entries every frame *)
+  | Slow of int  (** Advance 1 entry every n frames *)
+  | Fast of int  (** Advance n entries every frame *)
 
-let speeds = [| Slow 16; Slow 8; Slow 4; Slow 2; Fast 1; Fast 2; Fast 5; Fast 10; Fast 25; Fast 50 |]
+(** Pre-selected speeds *)
+let speeds =
+  [| Slow 16
+   ; Slow 8
+   ; Slow 4
+   ; Slow 2
+   ; Fast 1
+   ; Fast 2
+   ; Fast 5
+   ; Fast 10
+   ; Fast 25
+   ; Fast 50 |]
 
+(** Main render loop *)
 let render () =
   let frame_time = 1.0 /. 60.0 in
   try
     let entry_idx = ref 0 in
     let speed_idx = ref 4 in
     let frame_count = ref 0 in
+    let paused = ref false in
     while true do
       let t_start = gettimeofday () in
       let status = wait_next_event [Key_pressed; Poll] in
-      if status.keypressed then
-        match Graphics.read_key () with
-        | '\027' -> raise Exit
-        | '.' ->
-            if !speed_idx < Array.length speeds - 1 then incr speed_idx
-        | ',' ->
-            if !speed_idx > 0 then decr speed_idx
-        | '/' -> speed_idx := 4
-        | _ -> ()
-      else
-        render_frame status !entry_idx ;
-      (match speeds.(!speed_idx) with
-      | Slow n ->
-          incr frame_count ;
-          if !frame_count >= n then begin
-            frame_count := 0 ;
-            incr entry_idx
-          end
-      | Fast n ->
-          frame_count := 0 ;
-          entry_idx := !entry_idx + n) ;
+      ( if status.keypressed then
+          match Graphics.read_key () with
+          | '\027' ->
+              raise Exit
+          | '.' ->
+              if !speed_idx < Array.length speeds - 1 then incr speed_idx
+          | ',' ->
+              if !speed_idx > 0 then decr speed_idx
+          | '/' ->
+              speed_idx := 4
+          | ' ' ->
+              paused := not !paused
+          | _ ->
+              () ) ;
+      render_frame status !entry_idx ;
+      ( if not !paused then
+          match speeds.(!speed_idx) with
+          | Slow n ->
+              incr frame_count ;
+              if !frame_count >= n then begin
+                frame_count := 0 ;
+                incr entry_idx
+              end
+          | Fast n ->
+              frame_count := 0 ;
+              entry_idx := !entry_idx + n ) ;
       let elapsed = gettimeofday () -. t_start in
       let sleep_time = frame_time -. elapsed in
       if sleep_time > 0.0 then ignore (Unix.sleepf sleep_time) ;
