@@ -5,7 +5,7 @@ OPAM ?= opam
 OPAM_EXEC ?= $(OPAM) exec --
 DUNE ?= dune
 
-EXAMPLE ?= test/artemis_ii/artemis.txt test/artemis_ii/moon.txt
+EXAMPLE ?= test/artemis_ii/artemis.txt
 
 default: build
 
