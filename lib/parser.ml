@@ -30,6 +30,8 @@ let parse_line (center_body, target_body, entries, stage) line =
         let target_rexp =
           regexp {|^Target body name: \(.*\) (\(-?[0-9]+\)).*$|}
         in
+        let target_no_id_rexp =
+          regexp {|^Target body name: \(.*\).*|} in
         (* Check for center body *)
         let center_body =
           if string_match center_rexp line 0 then
@@ -45,7 +47,9 @@ let parse_line (center_body, target_body, entries, stage) line =
             Some
               { name= matched_group 1 line
               ; id= int_of_string (matched_group 2 line) }
-          else
+          else if string_match target_no_id_rexp line 0 then Some
+              { name= matched_group 1 line
+              ; id= -1 } else
             target_body
         in
         ( center_body

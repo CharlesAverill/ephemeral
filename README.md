@@ -19,6 +19,10 @@ Trajectories are available to the public via the [JPL Horizons System](https://s
 
 ![parker solar probe](test/parker/parker.gif)
 
+`dune exec -- ephemeral test/rosetta/*.txt --title="Rosetta Probe - Comet 67P" --speed=7`
+
+![rosetta probe](test/rosetta/rosetta.gif)
+
 `dune exec -- ephemeral test/parker/*.txt --title="Parker Solar Probe" --phi=-1 --theta=3.93`
 
 ![earth-sun](test/earth_sun_march2026.gif)
