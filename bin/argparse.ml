@@ -20,14 +20,13 @@ let parse_arguments () =
       , Printf.sprintf
           {|   <int>   Sets the starting speed of the simulation
                      (%d-%d, default=%d)|}
-          min_speed max_speed !speed );
-          ( "--dynamic-scale"
+          min_speed max_speed !speed )
+    ; ( "--dynamic-scale"
       , Arg.Bool (fun b -> dynamic_scale := b)
-      ,
-          {|
+      , {|
              <bool>  Determines whether view scales with scene
                      (default=false)|}
-          )
+      )
     ; ( "--record"
       , Arg.String (fun s -> render_video := Some s)
       , {|  <path>  Runs one loop of the ephemerides and calls

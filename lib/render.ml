@@ -52,6 +52,27 @@ let shape_of_name (s : string) : shape =
   else
     Point
 
+(** Guess a body's color from its name *)
+let color_of_name : string -> color = function
+  | "Mercury" ->
+      rgb 137 131 131
+  | "Venus" ->
+      rgb 228 216 202
+  | "Earth" ->
+      blue
+  | "Mars" ->
+      rgb 190 113 85
+  | "Jupiter" ->
+      rgb 194 131 88
+  | "Saturn" ->
+      rgb 251 250 220
+  | "Uranus" ->
+      rgb 208 233 242
+  | "Neptune" ->
+      rgb 159 186 195
+  | _ ->
+      white
+
 (** Guess a body's size from its shape *)
 let size_of_shape (s : shape) : int =
   match s with
@@ -110,8 +131,19 @@ let init (vts : vtable list) (speed : int) (title : string) =
     |> Printf.sprintf "ephemeral | %s" ) ;
   (* Initialize parameters *)
   default_speed_idx := speed ;
-  title_text := if title = "" then None else Some title;
-  (* Initialize target bodies *)
+  title_text :=
+    if title = "" then
+      None
+    else
+      Some title ;
+  (* Initialize bodies *)
+  let center = common_center vts in
+  reference_body :=
+    { shape= shape_of_name center.name
+    ; filled= false
+    ; size= size_of_shape (shape_of_name center.name)
+    ; color= color_of_name center.name
+    ; table= None } ;
   targets :=
     List.map
       (fun vt ->
@@ -121,7 +153,7 @@ let init (vts : vtable list) (speed : int) (title : string) =
         { shape= shape_of_name vt.target_body.name
         ; filled= false
         ; size= size_of_shape (shape_of_name vt.target_body.name)
-        ; color= white
+        ; color= color_of_name vt.target_body.name
         ; table= Some vt } )
       vts ;
   (* Initialize bounds *)
@@ -255,14 +287,14 @@ let render_frame (st : status) (entry_idx : int) =
       draw_shape body.shape body.filled (x, y) body.size body.color )
     !targets ;
   (* Draw title *)
-  (match !title_text with
-  | None -> ()
-  | Some tt -> 
-    set_color white;
-    let dimx, dimy = text_size tt in
-    moveto (size_x () / 2 - dimx / 2) (size_y () - 8 - dimy);
-    draw_string tt
-    );
+  ( match !title_text with
+  | None ->
+      ()
+  | Some tt ->
+      set_color white ;
+      let dimx, dimy = text_size tt in
+      moveto ((size_x () / 2) - (dimx / 2)) (size_y () - 8 - dimy) ;
+      draw_string tt ) ;
   (* Draw timestamp *)
   match !targets with
   | [] ->

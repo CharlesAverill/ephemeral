@@ -6,7 +6,7 @@ Parser and visualizer for JPL Ephemeris Files
 
 ## Examples
 
-`dune exec -- ephemeral test/voyager_2/*.txt --speed=9 --title="Voyager II" --dynamic-scale`
+`dune exec -- ephemeral test/voyager_2/*.txt --speed=9 --title="Voyager II" --dynamic-scale=true`
 
 ![voyager_ii](test/voyager_2/output.gif)
 

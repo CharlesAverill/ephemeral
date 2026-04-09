@@ -71,3 +71,18 @@ let align (vts : vtable list) : vtable list =
             in
             {vt with entries} )
           vts
+
+(** Get the common center body from a list of [vtable]s, or throw an error *)
+let common_center (vts : vtable list) : body =
+  match vts with
+  | [] ->
+      fatal rc_Error "Expected non-empty list of vector tables"
+  | h :: t ->
+      let center = h.center_body in
+      if List.exists (fun vt -> vt.center_body <> center) t then
+        fatal rc_Error
+          "Expected all bodies to be centered around %s, but found multiple \
+           centers"
+          center.name
+      else
+        center
