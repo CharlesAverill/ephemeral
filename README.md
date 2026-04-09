@@ -10,7 +10,15 @@ Parser and visualizer for JPL Ephemeris Files
 
 ![voyager_ii](test/voyager_2/output.gif)
 
+`dune exec -- ephemeral test/cassini/*.txt --title="Cassini" --speed 5`
+
+![cassini](test/cassini/cassini.gif)
+
 `dune exec -- ephemeral test/earth_sun_march2026.txt --title="Earth-Sun March 2026" --speed=9`
+
+![parker solar probe](test/parker/parker.gif)
+
+`dune exec -- ephemeral test/parker/*.txt --title="Parker Solar Probe" --phi=-1 --theta=3.93`
 
 ![earth-sun](test/earth_sun_march2026.gif)
 
@@ -39,7 +47,7 @@ Usage: ephemeral [OPTION]... [VECTOR_TABLE]...
              <bool>  Determines whether view scales with scene
                      (default=false)
   --theta    <float> Sets the starting azimuth of the viewport
-                     (0-360, default=0)
+                     (0-6.28, default=0)
   --phi    <float> Sets the starting elevation of the viewport
                      (-1.570796-1.570796, default=0.000000)
   --record   <path>  Runs one loop of the ephemerides and calls
