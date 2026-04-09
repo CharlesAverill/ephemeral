@@ -19,8 +19,15 @@ let parse_arguments () =
       , Arg.Int (fun n -> speed := clamp n min_speed max_speed)
       , Printf.sprintf
           {|   <int>   Sets the starting speed of the simulation
-                     (%d-%d, default is %d)|}
-          min_speed max_speed !speed )
+                     (%d-%d, default=%d)|}
+          min_speed max_speed !speed );
+          ( "--dynamic-scale"
+      , Arg.Bool (fun b -> dynamic_scale := b)
+      ,
+          {|
+             <bool>  Determines whether view scales with scene
+                     (default=false)|}
+          )
     ; ( "--record"
       , Arg.String (fun s -> render_video := Some s)
       , {|  <path>  Runs one loop of the ephemerides and calls
@@ -28,7 +35,7 @@ let parse_arguments () =
       )
     ; ( "--title"
       , Arg.Set_string title
-      , {|  <str>   Draws text to the top of the screen|} ) ]
+      , {|   <str>   Draws text to the top of the screen|} ) ]
   in
   let usage_msg = "Usage: ephemeral [OPTION]... [VECTOR_TABLE]..." in
   Arg.parse speclist (fun vt -> vector_tables := vt :: !vector_tables) usage_msg ;

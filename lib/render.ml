@@ -69,7 +69,7 @@ let size_of_shape (s : shape) : int =
       5
 
 (** Whether to use per-frame dynamic scaling *)
-let dynamic_scale = ref true
+let dynamic_scale = ref false
 
 (** Frame advancement speeds *)
 type speed =
