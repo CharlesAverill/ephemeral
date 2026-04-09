@@ -2,21 +2,21 @@
 opam-version: "2.0"
 synopsis: "Visualize spacecraft trajectories"
 description: "Parser and visualizer for JPL Ephemeris vector tables"
-maintainer: ["Charles Averill"]
-authors: ["Charles Averill"]
+maintainer: ["Charles Averill <charlesaverill20@gmail.com>"]
+authors: ["Charles Averill <charlesaverill20@gmail.com>"]
 license: "MIT"
+tags: ["NASA" "Space" "Spacecraft" "Moon" "Plotting" "Trajectory"]
 homepage: "https://github.com/CharlesAverill/ephemeral"
-doc: "https://github.com/CharlesAverill/ephemeral"
+doc: "https://charlesaverill.github.io/ephemeral/module/Ephemeral/"
 bug-reports: "https://github.com/CharlesAverill/ephemeral/issues"
 depends: [
-  "ocaml"
-  "dune" {>= "3.9"}
-  "alcotest"
-  "ocamlformat"
-  "odoc"
+  "ocaml" {>= "4.13.1"}
+  "dune" {>= "3.18"}
   "graphics"
-  "calendar"
+  "calendar" {>= "3.0.0"}
   "ppx_unreachable"
+  "ocamlformat" {with-doc}
+  "odoc" {with-doc}
 ]
 build: [
   ["dune" "subst"] {dev}
@@ -33,3 +33,4 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/CharlesAverill/ephemeral.git"
+x-maintenance-intent: ["(latest)"]

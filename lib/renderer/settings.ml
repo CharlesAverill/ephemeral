@@ -43,10 +43,25 @@ let speeds =
    ; Fast 25
    ; Fast 50 |]
 
+let find_index (f : 'a -> bool) (arr : 'a array) : int option =
+  fst
+    (Array.fold_right
+       (fun i (found, idx) ->
+         ( ( match found with
+           | Some _ ->
+               found
+           | None ->
+               if f i then
+                 Some idx
+               else
+                 None )
+         , idx + 1 ) )
+       arr (None, 0) )
+
 (** Index of initial speed setting *)
 let default_speed_idx =
   ref
-    ( match Array.find_index (( = ) (Fast 1)) speeds with
+    ( match find_index (( = ) (Fast 1)) speeds with
     | None ->
         [%unreachable]
     | Some idx ->

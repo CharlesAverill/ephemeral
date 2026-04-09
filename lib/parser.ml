@@ -30,8 +30,7 @@ let parse_line (center_body, target_body, entries, stage) line =
         let target_rexp =
           regexp {|^Target body name: \(.*\) (\(-?[0-9]+\)).*$|}
         in
-        let target_no_id_rexp =
-          regexp {|^Target body name: \(.*\).*|} in
+        let target_no_id_rexp = regexp {|^Target body name: \(.*\).*|} in
         (* Check for center body *)
         let center_body =
           if string_match center_rexp line 0 then
@@ -47,9 +46,9 @@ let parse_line (center_body, target_body, entries, stage) line =
             Some
               { name= matched_group 1 line
               ; id= int_of_string (matched_group 2 line) }
-          else if string_match target_no_id_rexp line 0 then Some
-              { name= matched_group 1 line
-              ; id= -1 } else
+          else if string_match target_no_id_rexp line 0 then
+            Some {name= matched_group 1 line; id= -1}
+          else
             target_body
         in
         ( center_body
@@ -166,9 +165,20 @@ let parse_line (center_body, target_body, entries, stage) line =
     | Done ->
         (center_body, target_body, entries, stage)
 
+(** Read lines from a file *)
+let lines (p : path) =
+  let ic = open_in p in
+  let rec loop acc =
+    try
+      let line = input_line ic in
+      loop (line :: acc)
+    with End_of_file -> close_in ic ; List.rev acc
+  in
+  loop []
+
 (** Parse a vector table file *)
 let parse (p : path) : vtable =
-  let lines = In_channel.input_lines (open_in p) in
+  let lines = lines p in
   match List.fold_left parse_line (None, None, [], Header) lines with
   | _, _, _, Fail s ->
       fatal rc_Parsing "%s" s

@@ -116,32 +116,6 @@ let rotate_point (x : float) (y : float) (z : float) : float * float =
 let draw_axes (entry_idx : int) =
   let sx, sy = (size_x (), size_y ()) in
   let cx, cy = (sx / 2, sy / 2) in
-  (* Compute scale exactly like screen_coords_of_body *)
-  let max_extent =
-    if !dynamic_scale then
-      List.fold_left
-        (fun acc t ->
-          match t.table with
-          | None ->
-              acc
-          | Some tbl ->
-              let e =
-                List.nth tbl.entries (entry_idx mod List.length tbl.entries)
-              in
-              let ex, ey = rotate_point e.pos.x e.pos.y e.pos.z in
-              Float.max acc (Float.max (Float.abs ex) (Float.abs ey)) )
-        1. !targets
-    else
-      Float.max
-        (Float.max (Float.abs !min_x) (Float.abs !max_x))
-        (Float.max (Float.abs !min_y) (Float.abs !max_y))
-  in
-  let max_extent =
-    if max_extent = 0. then
-      1.
-    else
-      max_extent
-  in
   let scale = float !reference_body.size in
   (* Basis vectors *)
   let axes =
@@ -184,9 +158,6 @@ let init (vts : vtable list) (speed : int) (title : string) =
   targets :=
     List.map
       (fun vt ->
-        let is_spacecraft =
-          String.ends_with ~suffix:"(spacecraft)" vt.target_body.name
-        in
         { shape= shape_of_name vt.target_body.name
         ; filled= false
         ; size= size_of_name vt.target_body.name
