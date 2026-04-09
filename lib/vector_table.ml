@@ -1,0 +1,45 @@
+(** Specifying and parsing JPL vector tables *)
+
+open Common
+open Logging
+
+(** Vector Table Entry *)
+type vtable_entry =
+  { time: float  (** Time of entry w.r.t. epoch *)
+  ; pos: vec3  (** Position vector *)
+  ; vel: vec3  (** Velocity vector *)
+  ; lt: float (* Newtonian light-time *)
+  ; rt: float  (** Distance from coordinate center *)
+  ; rr: float  (** Radial velocity *) }
+
+(** String representation of [vtable_entry] *)
+let string_of_vtable_entry (v : vtable_entry) : string =
+  Printf.sprintf
+    "@%f\n  X =%f Y =%f Z =%f\n  VX=%f VY=%f VZ=%f\n  LT=%f RT=%f RR=%f" v.time
+    v.pos.x v.pos.y v.pos.z v.vel.x v.vel.y v.vel.z v.lt v.rt v.rr
+
+(** Celestial body *)
+type body = {name: string; id: int}
+
+(** String representation of [body] *)
+let string_of_body (b : body) : string = Printf.sprintf "%s (%d)" b.name b.id
+
+(** Vector Table *)
+type vtable =
+  { center_body: body  (** Body at center of coordinate system *)
+  ; target_body: body  (** Tracked body *)
+  ; entries: vtable_entry list  (** Position, velocity data over time *) }
+
+(** String representation of [vtable] *)
+let string_of_vtable (v : vtable) : string =
+  Printf.sprintf
+    "===Center Body===\n%s\n===Target Body===\n%s\n===Entries===\n%s"
+    (string_of_body v.center_body)
+    (string_of_body v.target_body)
+    (String.concat "\n" (List.map string_of_vtable_entry v.entries))
+
+(** Min and max time tracked *)
+let time_span (vt : vtable) : float * float =
+  let open List in
+  try ((nth vt.entries 0).time, (nth vt.entries (length vt.entries - 1)).time)
+  with _ -> fatal rc_Error "Expected non-empty table in time_span"

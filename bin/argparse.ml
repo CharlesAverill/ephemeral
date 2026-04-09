@@ -1,17 +1,10 @@
-type arguments = { num_arg: int }
+open Ephemeral.Common
+
+type arguments = {vector_tables: path list}
 
 let parse_arguments () =
-  let num_arg = ref 0 in
-
-  let speclist =
-    [
-      ( "-n",
-        Arg.Int (fun n -> num_arg := n),
-        "Just a number!" );
-    ]
-  in
-  let usage_msg = "Usage: $PROJECT_NAME -n NUM_ARG" in
-
-  Arg.parse speclist (fun n -> print_endline ("Anonymous argument: " ^ n)) usage_msg;
-
-  { num_arg = !num_arg }
+  let vector_tables = ref [] in
+  let speclist = [] in
+  let usage_msg = "Usage: ephemeral [VECTOR_TABLE]..." in
+  Arg.parse speclist (fun vt -> vector_tables := vt :: !vector_tables) usage_msg ;
+  {vector_tables= !vector_tables}

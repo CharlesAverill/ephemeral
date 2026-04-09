@@ -1,23 +1,23 @@
 (lang dune 3.9)
 
-(name PROJECT_NAME_)
+(name ephemeral)
 
 (generate_opam_files true)
 
 (source
- (github _AUTHOR_USERNAME_/PROJECT_NAME_))
+ (github CharlesAverill/ephemeral))
 
-(authors "_AUTHOR_NAME_")
+(authors "Charles Averill")
 
-(maintainers "_AUTHOR_NAME_")
+(maintainers "Charles Averill")
 
-(license _SPX_LICENSE_)
+(license MIT)
 
-(documentation https://github.com/_AUTHOR_USERNAME_/PROJECT_NAME_)
+(documentation https://github.com/CharlesAverill/ephemeral)
 
 (package
- (name PROJECT_NAME_)
- (synopsis "_PROJECT_SYNOPSIS_")
- (description "_PROJECT_DESCRIPTION_")
- (depends ocaml dune alcotest ocamlformat odoc))
+ (name ephemeral)
+ (synopsis "Visualize spacecraft trajectories")
+ (description "Parser and visualizer for JPL Ephemeris vector tables")
+ (depends ocaml dune alcotest ocamlformat odoc graphics calendar ppx_unreachable))
 
