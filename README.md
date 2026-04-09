@@ -38,6 +38,10 @@ Usage: ephemeral [OPTION]... [VECTOR_TABLE]...
   --dynamic-scale 
              <bool>  Determines whether view scales with scene
                      (default=false)
+  --theta    <float> Sets the starting azimuth of the viewport
+                     (0-360, default=0)
+  --phi    <float> Sets the starting elevation of the viewport
+                     (-1.570796-1.570796, default=0.000000)
   --record   <path>  Runs one loop of the ephemerides and calls
                      ffmpeg to render a video from the frames
   --title    <str>   Draws text to the top of the screen
