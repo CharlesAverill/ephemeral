@@ -61,6 +61,9 @@ let size_of_shape (s : shape) : int =
   | Cross -> 6
   | Square -> 5
 
+  (** Whether to use per-frame dynamic scaling *)
+let dynamic_scale = ref true
+
 (** Initialize the rendering environment *)
 let init (vts : vtable list) =
   open_graph "" ;
@@ -150,27 +153,31 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
       in
       let x, y = (entry.pos.x, entry.pos.y) in
       let max_extent =
-        Float.max
-          (Float.max (Float.abs !min_x) (Float.abs !max_x))
-          (Float.max (Float.abs !min_y) (Float.abs !max_y))
-      in
-      let max_extent =
-        if max_extent = 0. then
-          1.
+        if !dynamic_scale then
+          List.fold_left
+            (fun acc t ->
+              match t.table with
+              | None -> acc
+              | Some tbl ->
+                  let e = List.nth tbl.entries (entry_idx mod List.length tbl.entries) in
+                  Float.max acc
+                    (Float.max (Float.abs e.pos.x) (Float.abs e.pos.y)) )
+            1. !targets
         else
-          max_extent
+          Float.max
+            (Float.max (Float.abs !min_x) (Float.abs !max_x))
+            (Float.max (Float.abs !min_y) (Float.abs !max_y))
       in
+      let max_extent = if max_extent = 0. then 1. else max_extent in
       let scale =
-        Float.min (float_of_int sx) (float_of_int sy) /. (2. *. max_extent)
+        Float.min (float_of_int sx) (float_of_int sy) /. (2. *. max_extent *. 1.1)
       in
       let px = int_of_float ((x *. scale) +. float_of_int cx) in
       let py = int_of_float ((y *. scale) +. float_of_int cy) in
-      (* Offset outward from center by the reference body's pixel radius *)
       let dx = px - cx in
       let dy = py - cy in
       let dist = Float.sqrt (float_of_int ((dx * dx) + (dy * dy))) in
-      if dist = 0. then
-        (px, py)
+      if dist = 0. then (px, py)
       else
         let r = float_of_int !reference_body.size in
         let factor = (dist +. r) /. dist in
@@ -254,6 +261,8 @@ let render () =
               speed_idx := 4
           | ' ' ->
               paused := not !paused
+          | 'z' ->
+    dynamic_scale := not !dynamic_scale
           | _ ->
               () ) ;
       render_frame status !entry_idx ;
