@@ -179,6 +179,7 @@ let parse (p : path) : vtable =
                 fatal rc_Parsing "Incomplete vector table entry on line %d: %s"
                   i line )
           entries
+        |> List.rev
       in
       {center_body; target_body; entries}
   | _ ->

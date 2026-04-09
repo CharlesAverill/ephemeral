@@ -78,6 +78,13 @@ let draw_shape (s : shape) (filled : bool) ((x, y) : int * int) (size : int)
           draw_circle
       in
       draw x y size
+  | Triangle ->
+      let half = size in
+      let pts = [|(x, y + half); (x - half, y - half); (x + half, y - half)|] in
+      if filled then
+        fill_poly pts
+      else
+        draw_poly pts
   | _ ->
       ()
 
@@ -92,20 +99,18 @@ let screen_coords_of_body (entry_idx : int) (b : body) : int * int =
         List.nth table.entries (entry_idx mod List.length table.entries)
       in
       let x, y = (entry.pos.x, entry.pos.y) in
-      let x_range =
-        if !max_x = !min_x then
+      let range = Float.max (!max_x -. !min_x) (!max_y -. !min_y) in
+      let range =
+        if range = 0. then
           1.
         else
-          !max_x -. !min_x
+          range
       in
-      let y_range =
-        if !max_y = !min_y then
-          1.
-        else
-          !max_y -. !min_y
-      in
-      let px = int_of_float ((x -. !min_x) /. x_range *. float_of_int sx) in
-      let py = int_of_float ((y -. !min_y) /. y_range *. float_of_int sy) in
+      let scale = Float.min (float_of_int sx) (float_of_int sy) /. range in
+      let cx_world = (!min_x +. !max_x) /. 2. in
+      let cy_world = (!min_y +. !max_y) /. 2. in
+      let px = int_of_float (((x -. cx_world) *. scale) +. float_of_int cx) in
+      let py = int_of_float (((y -. cy_world) *. scale) +. float_of_int cy) in
       (px, py)
 
 let render_frame (st : status) (entry_idx : int) =

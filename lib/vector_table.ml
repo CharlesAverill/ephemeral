@@ -43,3 +43,31 @@ let time_span (vt : vtable) : float * float =
   let open List in
   try ((nth vt.entries 0).time, (nth vt.entries (length vt.entries - 1)).time)
   with _ -> fatal rc_Error "Expected non-empty table in time_span"
+
+(** Align a list of vtables to their common overlapping time window.
+    Entries outside the window are dropped.
+    Returns an empty list if there is no overlap. *)
+let align (vts : vtable list) : vtable list =
+  match vts with
+  | [] | [_] ->
+      vts
+  | _ ->
+      let spans = List.map time_span vts in
+      let overlap_start =
+        List.fold_left (fun acc (s, _) -> Float.max acc s) neg_infinity spans
+      in
+      let overlap_end =
+        List.fold_left (fun acc (_, e) -> Float.min acc e) infinity spans
+      in
+      if overlap_start >= overlap_end then
+        fatal rc_Error "Vector tables have no overlapping time window"
+      else
+        List.map
+          (fun vt ->
+            let entries =
+              List.filter
+                (fun e -> e.time >= overlap_start && e.time <= overlap_end)
+                vt.entries
+            in
+            {vt with entries} )
+          vts
