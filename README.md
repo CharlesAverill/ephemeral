@@ -31,6 +31,22 @@ Trajectories are available to the public via the [JPL Horizons System](https://s
 
 ![iss](test/iss_march2026.gif)
 
+## Installation
+
+From opam:
+
+```
+opam install ephemeral
+```
+
+From source:
+
+```
+git clone https://github.com/CharlesAverill/ephemeral.git && cd ephemeral
+opam install . --deps-only
+make
+```
+
 ## Controls
 
 | Key | Effect |
